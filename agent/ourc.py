@@ -213,23 +213,22 @@ class OURCAgent(Sarsa):
 
         batch = buffer.sample_batch(32)
         obs, next_obs, act, rew, done, skill, next_skill = batch
-        transition = torch.concat([obs, next_obs], dim=1)
-        metrics.update(self.update_contrastive(transition, skill))
+        metrics.update(self.update_contrastive(next_obs, skill))
 
         # update q(z | tau)
         # bucket count for less time spending
-        metrics.update(self.update_gb(skill, transition, step))
+        metrics.update(self.update_gb(skill, next_obs, step))
 
         # compute intrinsic reward
         with torch.no_grad():
-            intr_reward = self.compute_intr_reward(skill, transition, metrics)
+            intr_reward = self.compute_intr_reward(skill, next_obs, metrics)
 
         if not self.update_encoder:
             obs = obs.detach()
             next_obs = next_obs.detach()
 
         next_action = self.act(next_obs, skill)
-        td_error = intr_reward + self.gamma * self.Q_table[s1, z, a1] - self.Q_table[
-            obs, torch.argmax(skill, dim=1), act]
-        self.Q_table[s0, z, a0] += self.alpha * td_error
+        td_error = intr_reward + self.gamma * self.Q_table[next_obs, torch.argmax(next_skill, dim=1), next_action] \
+                   - self.Q_table[obs, torch.argmax(skill, dim=1), act]
+        self.Q_table[obs, torch.argmax(skill, dim=1), act] += self.alpha * td_error
         return metrics
