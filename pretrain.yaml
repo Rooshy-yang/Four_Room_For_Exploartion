@@ -1,5 +1,5 @@
 defaults:
-  - agent: ddpg
+  - agent: ourc
 
 # mode
 reward_free: true

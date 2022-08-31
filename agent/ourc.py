@@ -95,7 +95,6 @@ class OURCAgent(DDPGAgent):
         self.skill_R = [0] * self.skill_dim
         self.ucb_scale = 2
 
-
     # def get_meta_specs(self):
     #     return specs.Array((self.skill_dim,), np.float32, 'skill'),
 
@@ -156,7 +155,8 @@ class OURCAgent(DDPGAgent):
         d_pred = self.gb(tau_batch)
         d_pred_log_softmax = F.log_softmax(d_pred, dim=1)
         _, pred_z = torch.max(d_pred_log_softmax, dim=1, keepdim=True)
-        gb_reward = d_pred_log_softmax[torch.arange(d_pred.shape[0]), torch.argmax(skills, dim=1)] - math.log(1 / self.skill_dim)
+        gb_reward = d_pred_log_softmax[torch.arange(d_pred.shape[0]), torch.argmax(skills, dim=1)] - math.log(
+            1 / self.skill_dim)
         gb_reward = gb_reward.reshape(-1, 1)
 
         if self.use_tb or self.use_wandb:
@@ -221,46 +221,32 @@ class OURCAgent(DDPGAgent):
             pred_z.size())[0]
         return d_loss, df_accuracy
 
-    def update(self, replay_iter, step):
+    def update(self, buffer, step):
         metrics = dict()
 
         if step % self.update_every_steps != 0:
             return metrics
 
         if self.reward_free:
-
             for _ in range(self.contrastive_update_rate):
                 # one trajectory for self.skill_dim'th tau with different skill, obs,next_obs,action from every tau,
-                batch = next(replay_iter)
-                tau, obs, next_obs, action, discount, skill = utils.to_torch(batch, self.device)
-                # shape to (batch_size, variable_dim)
-                discount = discount.view(-1, 1)
-                tau = tau.view(-1, self.tau_dim)
-                obs = obs.view(-1, self.obs_dim - self.skill_dim)
-                next_obs = next_obs.view(-1, self.obs_dim - self.skill_dim)
-                action = action.view(-1, self.action_dim)
-                skill = skill.view(-1, self.skill_dim)
-
-                metrics.update(self.update_contrastive(tau, skill))
+                batch = buffer.sample_batch(32)
+                obs, next_obs, act, rew, done, skill = batch
+                transistion = torch.concat([obs, next_obs], dim=1)
+                metrics.update(self.update_contrastive(transistion, skill))
 
             # update q(z | tau)
             # bucket count for less time spending
-            metrics.update(self.update_gb(skill, tau, step))
+            metrics.update(self.update_gb(skill, transistion, step))
 
             # compute intrinsic reward
             with torch.no_grad():
-                intr_reward = self.compute_intr_reward(skill, tau, metrics)
+                intr_reward = self.compute_intr_reward(skill, transistion, metrics)
 
             if self.use_tb or self.use_wandb:
                 metrics['intr_reward'] = intr_reward.mean().item()
 
             reward = intr_reward
-        else:
-            batch = next(replay_iter)
-
-            obs, action, extr_reward, discount, next_obs, skill = utils.to_torch(
-                batch, self.device)
-            reward = extr_reward
 
         # augment and encode
         obs = self.aug_and_encode(obs)

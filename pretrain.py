@@ -26,9 +26,10 @@ class Workspace:
 
     def train(self):
         global_step = 0
-        buffer = ReplayBuffer(obs_dim=1, act_dim=1, size=2000000)
+        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim = 16, size=2000000)
         env = Four_Rooms_Environment()
-        obs = env.reset()
+        timestep = env.reset()
+        obs = timestep['observation']
         meta = self.agent.init_meta()
 
         while global_step < self.cfg.num_train_frames:
@@ -39,7 +40,8 @@ class Workspace:
             next_obs, reward, done = env.step(action)
             buffer.store(obs, action, reward, next_obs, done)
             if done:
-                obs = env.reset()
+                timestep = env.reset()
+                obs = timestep['observation']
             else:
                 obs = next_obs
             self.agent.update_meta(meta, global_step, obs)
