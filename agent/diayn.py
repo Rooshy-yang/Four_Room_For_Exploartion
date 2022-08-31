@@ -6,10 +6,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dm_env import specs
 
 import utils
-from ddpg import DDPGAgent
+from agent.ddpg import DDPGAgent
 
 
 class DIAYN(nn.Module):
@@ -52,8 +51,6 @@ class DIAYNAgent(DDPGAgent):
 
         self.diayn.train()
 
-    def get_meta_specs(self):
-        return (specs.Array((self.skill_dim,), np.float32, 'skill'),)
 
     def init_meta(self):
         skill = np.zeros(self.skill_dim, dtype=np.float32)

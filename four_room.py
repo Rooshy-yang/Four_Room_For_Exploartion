@@ -10,11 +10,13 @@ from gym.utils import seeding
 from matplotlib import pyplot
 from random import randint
 
+
 class Four_Rooms_Environment(gym.Env):
     """Four rooms game environment as described in paper http://www-anw.cs.umass.edu/~barto/courses/cs687/Sutton-Precup-Singh-AIJ99.pdf"""
     environment_name = "Four Rooms"
 
-    def __init__(self, grid_width=13, grid_height=13, stochastic_actions_probability=1.0/3.0, random_start_user_place=False,
+    def __init__(self, grid_width=13, grid_height=13, stochastic_actions_probability=1.0 / 3.0,
+                 random_start_user_place=False,
                  random_goal_place=True):
         assert grid_width >= 9 and grid_height >= 9, "Both grid height and width must be 9 or higher"
         self.grid_width = grid_width
@@ -28,7 +30,7 @@ class Four_Rooms_Environment(gym.Env):
         self.stochastic_actions_probability = stochastic_actions_probability
         self.actions = set(range(4))
         # Note that the indices of the grid are such that (0, 0) is the top left point
-        self.action_to_effect_dict = {0: "North", 1: "East", 2: "South", 3:"West"}
+        self.action_to_effect_dict = {0: "North", 1: "East", 2: "South", 3: "West"}
         self.current_user_location = None
         self.current_goal_location = None
         self.reward_for_achieving_goal = (self.grid_width + self.grid_height) * 3.0
@@ -52,7 +54,6 @@ class Four_Rooms_Environment(gym.Env):
         self.max_episode_steps = self.reward_for_achieving_goal
         self.id = "Four Rooms"
 
-
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -65,7 +66,8 @@ class Four_Rooms_Environment(gym.Env):
         self.desired_goal = [self.location_to_state(self.current_goal_location)]
         self.achieved_goal = [self.location_to_state(self.current_user_location)]
         self.step_count = 0
-        self.state = [self.location_to_state(self.current_user_location), self.location_to_state(self.current_goal_location)]
+        self.state = [self.location_to_state(self.current_user_location),
+                      self.location_to_state(self.current_goal_location)]
         self.next_state = None
         self.reward = None
         self.done = False
@@ -73,12 +75,11 @@ class Four_Rooms_Environment(gym.Env):
 
         if self.random_goal_place:
             self.s = {"observation": np.array(self.state[:self.state_only_dimension]),
-                    "desired_goal": np.array(self.desired_goal),
-                    "achieved_goal": np.array(self.achieved_goal)}
+                      "desired_goal": np.array(self.desired_goal),
+                      "achieved_goal": np.array(self.achieved_goal)}
         else:
             self.s = np.array(self.state[:self.state_only_dimension])
         return self.s
-
 
     def step(self, desired_action):
         if type(desired_action) is np.ndarray:
@@ -97,15 +98,17 @@ class Four_Rooms_Environment(gym.Env):
             self.done = True
         else:
             self.reward = self.step_reward_for_not_achieving_goal
-            if self.step_count >= self.max_episode_steps: self.done = True
-            else: self.done = False
+            if self.step_count >= self.max_episode_steps:
+                self.done = True
+            else:
+                self.done = False
         self.achieved_goal = self.next_state[:self.state_only_dimension]
         self.state = self.next_state
 
         if self.random_goal_place:
             self.s = {"observation": np.array(self.next_state[:self.state_only_dimension]),
-                "desired_goal": np.array(self.desired_goal),
-                "achieved_goal": np.array(self.achieved_goal)}
+                      "desired_goal": np.array(self.desired_goal),
+                      "achieved_goal": np.array(self.achieved_goal)}
         else:
             self.s = np.array(self.next_state[:self.state_only_dimension])
 
@@ -117,7 +120,8 @@ class Four_Rooms_Environment(gym.Env):
         if random.random() < self.stochastic_actions_probability:
             valid_actions = [action for action in self.actions if action != desired_action]
             action = random.choice(valid_actions)
-        else: action = desired_action
+        else:
+            action = desired_action
         return action
 
     def calculate_desired_new_state(self, action):
@@ -136,7 +140,8 @@ class Four_Rooms_Environment(gym.Env):
 
     def move_user(self, current_location, new_location):
         """Moves a user from current location to new location"""
-        assert self.grid[current_location[0]][current_location[1]] == self.user_space_name, "{} vs. {}".format(self.grid[current_location[0]][current_location[1]], self.user_space_name)
+        assert self.grid[current_location[0]][current_location[1]] == self.user_space_name, "{} vs. {}".format(
+            self.grid[current_location[0]][current_location[1]], self.user_space_name)
         self.grid[new_location[0]][new_location[1]] = self.user_space_name
         self.grid[current_location[0]][current_location[1]] = self.blank_space_name
         self.current_user_location = (new_location[0], new_location[1])
@@ -167,7 +172,7 @@ class Four_Rooms_Environment(gym.Env):
     def state_to_location(self, state):
         """Maps a state integer to the (x, y) grid point it represents"""
         col = int(state / self.grid_height)
-        row = state - col*self.grid_height
+        row = state - col * self.grid_height
         return (row, col)
 
     def create_grid(self):
@@ -175,22 +180,23 @@ class Four_Rooms_Environment(gym.Env):
         grid = [[self.blank_space_name for _ in range(self.grid_width)] for _ in range(self.grid_height)]
         centre_col = int(self.grid_width / 2)
         centre_row = int(self.grid_height / 2)
-        gaps = [(centre_row, int(centre_col / 2) - 1),  (centre_row, centre_col + int(centre_col / 2)),
-                 (int(centre_row/2), centre_col),(centre_row + int(centre_row/2) + 1, centre_col)]
+        gaps = [(centre_row, int(centre_col / 2) - 1), (centre_row, centre_col + int(centre_col / 2)),
+                (int(centre_row / 2), centre_col), (centre_row + int(centre_row / 2) + 1, centre_col)]
         for row in range(self.grid_height):
             for col in range(self.grid_width):
                 if row == 0 or col == 0 or row == self.grid_height - 1 or col == self.grid_width - 1:
                     grid[row][col] = self.wall_space_name
                 if row == centre_row or col == centre_col:
                     grid[row][col] = self.wall_space_name
-                if (row , col) in gaps:
+                if (row, col) in gaps:
                     grid[row][col] = self.blank_space_name
         return grid
 
     def place_agent(self):
         """Places the agent on a random non-wall square"""
         if self.random_start_user_place:
-            self.current_user_location = self.randomly_place_something(self.user_space_name, [self.wall_space_name, self.goal_space_name])
+            self.current_user_location = self.randomly_place_something(self.user_space_name,
+                                                                       [self.wall_space_name, self.goal_space_name])
         else:
             self.current_user_location = (1, 1)
             self.grid[1][1] = self.user_space_name
@@ -198,7 +204,8 @@ class Four_Rooms_Environment(gym.Env):
     def place_goal(self):
         """Places the goal on a random non-WALL and non-USER square"""
         if self.random_goal_place:
-            self.current_goal_location = self.randomly_place_something(self.goal_space_name, [self.wall_space_name, self.user_space_name])
+            self.current_goal_location = self.randomly_place_something(self.goal_space_name,
+                                                                       [self.wall_space_name, self.user_space_name])
         else:
             self.current_goal_location = (3, 3)
             self.grid[3][3] = self.goal_space_name
@@ -222,7 +229,6 @@ class Four_Rooms_Environment(gym.Env):
         else:
             reward = self.step_reward_for_not_achieving_goal
         return reward
-
 
     def print_current_grid(self):
         """Prints out the grid"""
@@ -249,6 +255,6 @@ class Four_Rooms_Environment(gym.Env):
         bounds = [-101, -1, 1, 11, 21]
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
         pyplot.imshow(copied_grid, interpolation='nearest',
-                            cmap=cmap, norm=norm)
+                      cmap=cmap, norm=norm)
         print("Black = wall, White = empty, Blue = user, Red = goal")
         pyplot.show()
