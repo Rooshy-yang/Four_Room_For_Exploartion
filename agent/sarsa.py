@@ -14,18 +14,18 @@ class Sarsa:
 
     def act(self, state, skill):  # 选取下一步的操作,具体实现为epsilon-贪婪
         if torch.is_tensor(skill):
-            skill_num = torch.argmax(skill, dim=1)
+            skill_num = torch.argmax(skill, dim=1).numpy()
         else:
             skill_num = np.argmax(skill)
         if np.random.random() < self.epsilon:
-            action = np.random.randint(self.n_action)
+            action = np.random.randint(self.n_action, size=state.shape[0])
         else:
-            action = np.argmax(self.Q_table[state][skill_num])
+            action = np.argmax(self.Q_table[state, skill_num], axis=-1)
         return action
 
     def best_action(self, state, skill):  # 用于打印策略
         skill_num = torch.argmax(skill, dim=1).item()
-        Q_max = np.max(self.Q_table[state][skill_num])
+        Q_max = np.max(self.Q_table[state, skill_num])
         a = [0 for _ in range(self.n_action)]
         for i in range(self.n_action):  # 若两个动作的价值一样,都会记录下来
             if self.Q_table[state, i] == Q_max:

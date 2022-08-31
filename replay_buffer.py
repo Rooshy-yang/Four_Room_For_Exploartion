@@ -24,8 +24,6 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, size
 
     def store(self, obs, act, rew, next_obs, done, skill, next_skill):
-        skill = np.argmax(skill)
-        next_skill = np.argmax(next_skill)
         self.obs_buf[self.ptr] = obs
         self.obs2_buf[self.ptr] = next_obs
         self.act_buf[self.ptr] = act
@@ -46,3 +44,8 @@ class ReplayBuffer:
                      skill=self.skill_buf[idxs],
                      nextskill=self.skill2_buf[idxs])
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in batch.items()}
+
+    def save(self):
+        data = (self.obs_buf,self.obs2_buf,self.act_buf,self.skill_buf,self.skill2_buf,self.rew_buf,self.done_buf)
+        for i in data:
+            np.save(i)

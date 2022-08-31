@@ -27,15 +27,16 @@ class Workspace:
 
     def train(self):
         global_step = 0
-        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=2000000)
+        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=2001000)
         env = Four_Rooms_Environment()
         timestep = env.reset()
         obs = timestep['observation']
         meta = self.agent.init_meta()
         while global_step < self.cfg.num_train_frames:
-
             action = self.agent.act(obs, meta['skill'])
             next_obs, reward, done, _ = env.step(action)
+            next_obs = next_obs['observation']
+            # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
             buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
             meta = next_meta
@@ -44,11 +45,12 @@ class Workspace:
                 obs = timestep['observation']
             else:
                 obs = next_obs
-
             if global_step > self.cfg.num_seed_frames:
                 self.agent.update(buffer, global_step)
 
             global_step += 1
+        np.save(self.agent.Q_table)
+        np.save(buffer)
 
 
 @hydra.main(config_path='.', config_name='pretrain')

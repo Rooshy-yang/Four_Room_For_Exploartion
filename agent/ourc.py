@@ -133,14 +133,14 @@ class OURCAgent(Sarsa):
             1 / self.skill_dim)
         gb_reward = gb_reward.reshape(-1, 1)
 
-        # compute contrastive reward
-        features = self.discriminator(tau_batch)
-        logits, labels = self.compute_info_nce_loss(features, skills)
-
-        contrastive_reward = torch.softmax(logits, dim=1)[:, 0].view(tau_batch.shape[0], -1)
-
-        intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
-
+        # # compute contrastive reward
+        # features = self.discriminator(tau_batch)
+        # logits, labels = self.compute_info_nce_loss(features, skills)
+        #
+        # contrastive_reward = torch.softmax(logits, dim=1)[:, 0].view(tau_batch.shape[0], -1)
+        #
+        # intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
+        intri_reward = gb_reward
         return intri_reward
 
     def compute_info_nce_loss(self, features, skills):
@@ -196,8 +196,8 @@ class OURCAgent(Sarsa):
             return metrics
 
         batch = buffer.sample_batch(32)
-        obs, next_obs, act, rew, done, skill, next_skill = batch
-        metrics.update(self.update_contrastive(next_obs, skill))
+        obs, next_obs, action, rew, done, skill, next_skill = batch.values()
+        # metrics.update(self.update_contrastive(next_obs, skill))
 
         # update q(z | tau)
         # bucket count for less time spending
@@ -211,8 +211,13 @@ class OURCAgent(Sarsa):
             obs = obs.detach()
             next_obs = next_obs.detach()
 
-        next_action = self.act(next_obs, skill)
-        td_error = intr_reward + self.gamma * self.Q_table[next_obs, torch.argmax(next_skill, dim=1), next_action] - \
-                   self.Q_table[obs, torch.argmax(skill, dim=1), act]
-        self.Q_table[obs, torch.argmax(skill, dim=1), act] += self.alpha * td_error
+        action = action.numpy().astype('int').flatten()
+        obs = obs.numpy().astype('int').flatten()
+        next_obs = next_obs.numpy().astype('int').flatten()
+        next_action = self.act(next_obs, skill).flatten()
+        skill = torch.argmax(skill, dim=1).numpy()
+        intr_reward = intr_reward.numpy().flatten()
+        td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
+                   self.Q_table[obs, skill, action]
+        self.Q_table[obs, skill, action] += self.alpha * td_error
         return metrics
