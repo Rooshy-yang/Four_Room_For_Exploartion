@@ -12,11 +12,10 @@ update_every_steps: 2
 use_tb: ${use_tb}
 use_wandb: ${use_wandb}
 num_expl_steps: ??? # to be specified later
-hidden_dim: 1024
-feature_dim: 50
+hidden_dim: 32
+#feature_dim: 50
 stddev_schedule: 0.2
 stddev_clip: 0.3
-skill_dim: 16
 update_skill_every_step: 50
 nstep: 3
 batch_size: 64
@@ -27,6 +26,9 @@ replay_buffer_size: ${replay_buffer_size}
 contrastive_update_rate: 3
 temperature: 0.07
 contrastive_scale: 1.0
+
+obs_dim: 1
+skill_dim: 16
 ncol: 13
 nrow: 13
 epsilon: 0.1

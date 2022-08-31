@@ -34,4 +34,3 @@ use_wandb: false
 # experiment
 experiment: ${agent.name}_seed_${seed}_${domain}
 extrainfo: _
-

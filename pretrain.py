@@ -7,6 +7,7 @@ from replay_buffer import ReplayBuffer
 import hydra
 import torch
 
+
 def make_agent(obs_type, obs_spec, action_spec, num_expl_steps, cfg):
     cfg.obs_type = obs_type
     cfg.obs_shape = obs_spec.shape
@@ -26,7 +27,7 @@ class Workspace:
 
     def train(self):
         global_step = 0
-        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim = 16, size=2000000)
+        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=2000000)
         env = Four_Rooms_Environment()
         timestep = env.reset()
         obs = timestep['observation']

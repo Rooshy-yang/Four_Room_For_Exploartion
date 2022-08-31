@@ -1,16 +1,12 @@
-import collections
 import math
 from collections import OrderedDict
 
-import hydra
-import random
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import utils
-from agent.ddpg import DDPGAgent
 from agent.sarsa import Sarsa
 
 
@@ -52,10 +48,9 @@ class Discriminator(nn.Module):
 
 
 class OURCAgent(Sarsa):
-    def __init__(self, update_skill_every_step, skill_dim, contrastive_scale,
+    def __init__(self, update_skill_every_step, contrastive_scale,
                  update_encoder, contrastive_update_rate, temperature, update_every_steps, **kwargs):
         self.lr = kwargs['lr']
-        self.skill_dim = skill_dim
         self.update_skill_every_step = update_skill_every_step
         self.contrastive_scale = contrastive_scale
         self.update_encoder = update_encoder
@@ -72,13 +67,11 @@ class OURCAgent(Sarsa):
         # create actor and critic
         super().__init__(**kwargs)
 
-        self.tau_dim = (self.obs_dim - self.skill_dim) * self.tau_len
-
         # create ourc
-        self.gb = GeneratorB(self.tau_dim, self.skill_dim,
+        self.gb = GeneratorB(self.obs_dim, self.skill_dim,
                              kwargs['hidden_dim']).to(kwargs['device'])
 
-        self.discriminator = Discriminator(self.tau_dim,
+        self.discriminator = Discriminator(self.obs_dim,
                                            self.skill_dim,
                                            kwargs['hidden_dim']).to(kwargs['device'])
 
@@ -94,13 +87,6 @@ class OURCAgent(Sarsa):
         self.discriminator.train()
 
         self.skill_ptr = 0
-        self.skill_V = [0] * self.skill_dim
-        self.skill_count = [0] * self.skill_dim
-        self.skill_R = [0] * self.skill_dim
-        self.ucb_scale = 2
-
-    # def get_meta_specs(self):
-    #     return specs.Array((self.skill_dim,), np.float32, 'skill'),
 
     def init_meta(self):
         skill = np.zeros(self.skill_dim, dtype=np.float32)
@@ -228,7 +214,7 @@ class OURCAgent(Sarsa):
             next_obs = next_obs.detach()
 
         next_action = self.act(next_obs, skill)
-        td_error = intr_reward + self.gamma * self.Q_table[next_obs, torch.argmax(next_skill, dim=1), next_action] \
-                   - self.Q_table[obs, torch.argmax(skill, dim=1), act]
+        td_error = intr_reward + self.gamma * self.Q_table[next_obs, torch.argmax(next_skill, dim=1), next_action] - \
+                   self.Q_table[obs, torch.argmax(skill, dim=1), act]
         self.Q_table[obs, torch.argmax(skill, dim=1), act] += self.alpha * td_error
         return metrics
