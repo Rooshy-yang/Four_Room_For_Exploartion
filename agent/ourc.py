@@ -50,6 +50,7 @@ class Discriminator(nn.Module):
 class OURCAgent(Sarsa):
     def __init__(self, update_skill_every_step, contrastive_scale,
                  update_encoder, contrastive_update_rate, temperature, update_every_steps, **kwargs):
+        super().__init__(**kwargs)
         self.lr = kwargs['lr']
         self.update_skill_every_step = update_skill_every_step
         self.contrastive_scale = contrastive_scale
@@ -63,9 +64,6 @@ class OURCAgent(Sarsa):
         self.obs_dim = kwargs['obs_dim']
         # increase obs shape to include skill dim
         kwargs["meta_dim"] = self.skill_dim
-
-        # create actor and critic
-        super().__init__(**kwargs)
 
         # create ourc
         self.gb = GeneratorB(self.obs_dim, self.skill_dim,

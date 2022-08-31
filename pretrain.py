@@ -32,20 +32,18 @@ class Workspace:
         timestep = env.reset()
         obs = timestep['observation']
         meta = self.agent.init_meta()
-
         while global_step < self.cfg.num_train_frames:
 
-            with torch.no_grad():
-                action = self.agent.act(obs, meta, global_step, eval_mode=False)
-
-            next_obs, reward, done = env.step(action)
-            buffer.store(obs, action, reward, next_obs, done)
+            action = self.agent.act(obs, meta['skill'])
+            next_obs, reward, done,_ = env.step(action)
+            next_meta = self.agent.update_meta(meta, global_step, obs)
+            buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
+            meta = next_meta
             if done:
                 timestep = env.reset()
                 obs = timestep['observation']
             else:
                 obs = next_obs
-            self.agent.update_meta(meta, global_step, obs)
 
             if global_step > self.cfg.num_seed_frames:
                 self.agent.update(buffer, global_step)

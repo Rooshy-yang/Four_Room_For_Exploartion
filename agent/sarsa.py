@@ -13,7 +13,10 @@ class Sarsa:
         self.epsilon = epsilon  # epsilon-贪婪策略中的参数
 
     def act(self, state, skill):  # 选取下一步的操作,具体实现为epsilon-贪婪
-        skill_num = torch.argmax(skill, dim=1).item()
+        if torch.is_tensor(skill):
+            skill_num = torch.argmax(skill, dim=1)
+        else:
+            skill_num = np.argmax(skill)
         if np.random.random() < self.epsilon:
             action = np.random.randint(self.n_action)
         else:
