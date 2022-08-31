@@ -35,7 +35,7 @@ class Workspace:
         while global_step < self.cfg.num_train_frames:
 
             action = self.agent.act(obs, meta['skill'])
-            next_obs, reward, done,_ = env.step(action)
+            next_obs, reward, done, _ = env.step(action)
             next_meta = self.agent.update_meta(meta, global_step, obs)
             buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
             meta = next_meta

@@ -24,8 +24,8 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, size
 
     def store(self, obs, act, rew, next_obs, done, skill, next_skill):
-        skill = torch.argmax(skill, dim=1).item()
-        next_skill = torch.argmax(next_skill, dim=1).item()
+        skill = np.argmax(skill)
+        next_skill = np.argmax(next_skill)
         self.obs_buf[self.ptr] = obs
         self.obs2_buf[self.ptr] = next_obs
         self.act_buf[self.ptr] = act
