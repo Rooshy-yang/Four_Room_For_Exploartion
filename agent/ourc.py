@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 import utils
 from agent.ddpg import DDPGAgent
+from agent.sarsa import Sarsa
 
 
 class GeneratorB(nn.Module):
@@ -50,9 +51,10 @@ class Discriminator(nn.Module):
         return features
 
 
-class OURCAgent(DDPGAgent):
+class OURCAgent(Sarsa):
     def __init__(self, update_skill_every_step, skill_dim, contrastive_scale,
-                 update_encoder, contrastive_update_rate, temperature, **kwargs):
+                 update_encoder, contrastive_update_rate, temperature, update_every_steps, **kwargs):
+        self.lr = kwargs['lr']
         self.skill_dim = skill_dim
         self.update_skill_every_step = update_skill_every_step
         self.contrastive_scale = contrastive_scale
@@ -60,8 +62,10 @@ class OURCAgent(DDPGAgent):
         self.batch_size = kwargs['batch_size']
         self.contrastive_update_rate = contrastive_update_rate
         self.temperature = temperature
-
+        self.device = kwargs['device']
         self.tau_len = update_skill_every_step
+        self.update_every_steps = update_every_steps
+        self.obs_dim = kwargs['obs_dim']
         # increase obs shape to include skill dim
         kwargs["meta_dim"] = self.skill_dim
 
@@ -117,16 +121,8 @@ class OURCAgent(DDPGAgent):
         loss, df_accuracy = self.compute_gb_loss(gb_batch, labels)
 
         self.gb_opt.zero_grad()
-        if self.encoder_opt is not None:
-            self.encoder_opt.zero_grad(set_to_none=True)
         loss.backward()
         self.gb_opt.step()
-        if self.encoder_opt is not None:
-            self.encoder_opt.step()
-
-        if self.use_tb or self.use_wandb:
-            metrics['gb_loss'] = loss.item()
-            metrics['gb_acc'] = df_accuracy
 
         return metrics
 
@@ -137,15 +133,9 @@ class OURCAgent(DDPGAgent):
         loss = self.discriminator_criterion(logits, labels)
 
         self.dis_opt.zero_grad()
-        if self.encoder_opt is not None:
-            self.encoder_opt.zero_grad(set_to_none=True)
+
         loss.backward()
         self.dis_opt.step()
-        if self.encoder_opt is not None:
-            self.encoder_opt.step()
-
-        if self.use_tb or self.use_wandb:
-            metrics['contrastive_loss'] = loss.item()
 
         return metrics
 
@@ -159,9 +149,6 @@ class OURCAgent(DDPGAgent):
             1 / self.skill_dim)
         gb_reward = gb_reward.reshape(-1, 1)
 
-        if self.use_tb or self.use_wandb:
-            metrics['gb_reward'] = gb_reward.mean().item()
-
         # compute contrastive reward
         features = self.discriminator(tau_batch)
         logits, labels = self.compute_info_nce_loss(features, skills)
@@ -169,9 +156,6 @@ class OURCAgent(DDPGAgent):
         contrastive_reward = torch.softmax(logits, dim=1)[:, 0].view(tau_batch.shape[0], -1)
 
         intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
-
-        if self.use_tb or self.use_wandb:
-            metrics['contrastive_reward'] = contrastive_reward.mean().item()
 
         return intri_reward
 
@@ -227,52 +211,25 @@ class OURCAgent(DDPGAgent):
         if step % self.update_every_steps != 0:
             return metrics
 
-        if self.reward_free:
-            for _ in range(self.contrastive_update_rate):
-                # one trajectory for self.skill_dim'th tau with different skill, obs,next_obs,action from every tau,
-                batch = buffer.sample_batch(32)
-                obs, next_obs, act, rew, done, skill = batch
-                transistion = torch.concat([obs, next_obs], dim=1)
-                metrics.update(self.update_contrastive(transistion, skill))
+        batch = buffer.sample_batch(32)
+        obs, next_obs, act, rew, done, skill, next_skill = batch
+        transition = torch.concat([obs, next_obs], dim=1)
+        metrics.update(self.update_contrastive(transition, skill))
 
-            # update q(z | tau)
-            # bucket count for less time spending
-            metrics.update(self.update_gb(skill, transistion, step))
+        # update q(z | tau)
+        # bucket count for less time spending
+        metrics.update(self.update_gb(skill, transition, step))
 
-            # compute intrinsic reward
-            with torch.no_grad():
-                intr_reward = self.compute_intr_reward(skill, transistion, metrics)
-
-            if self.use_tb or self.use_wandb:
-                metrics['intr_reward'] = intr_reward.mean().item()
-
-            reward = intr_reward
-
-        # augment and encode
-        obs = self.aug_and_encode(obs)
-        next_obs = self.aug_and_encode(next_obs)
-
-        if self.use_tb or self.use_wandb:
-            metrics['batch_reward'] = reward.mean().item()
+        # compute intrinsic reward
+        with torch.no_grad():
+            intr_reward = self.compute_intr_reward(skill, transition, metrics)
 
         if not self.update_encoder:
             obs = obs.detach()
             next_obs = next_obs.detach()
 
-        # extend observations with skill
-        obs = torch.cat([obs, skill], dim=1)
-        next_obs = torch.cat([next_obs, skill], dim=1)
-
-        # update critic
-        metrics.update(
-            self.update_critic(obs.detach(), action, reward, discount,
-                               next_obs.detach(), step))
-
-        # update actor
-        metrics.update(self.update_actor(obs.detach(), step))
-
-        # update critic target
-        utils.soft_update_params(self.critic, self.critic_target,
-                                 self.critic_target_tau)
-
+        next_action = self.act(next_obs, skill)
+        td_error = intr_reward + self.gamma * self.Q_table[s1, z, a1] - self.Q_table[
+            obs, torch.argmax(skill, dim=1), act]
+        self.Q_table[s0, z, a0] += self.alpha * td_error
         return metrics
