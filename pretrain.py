@@ -27,7 +27,7 @@ class Workspace:
 
     def train(self):
         global_step = 0
-        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=2001000)
+        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=self.cfg.num_train_frames + 2)
         env = Four_Rooms_Environment()
         timestep = env.reset()
         obs = timestep['observation']
