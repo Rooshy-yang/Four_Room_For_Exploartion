@@ -14,10 +14,10 @@ from random import randint
 class Four_Rooms_Environment(gym.Env):
     """Four rooms game environment as described in paper http://www-anw.cs.umass.edu/~barto/courses/cs687/Sutton-Precup-Singh-AIJ99.pdf"""
     environment_name = "Four Rooms"
-
-    def __init__(self, grid_width=13, grid_height=13, stochastic_actions_probability=1.0 / 3.0,
+    
+    def __init__(self, grid_width=13, grid_height=13, stochastic_actions_probability=0.0 / 3.0,
                  random_start_user_place=False,
-                 random_goal_place=True):
+                 random_goal_place=False):
         assert grid_width >= 9 and grid_height >= 9, "Both grid height and width must be 9 or higher"
         self.grid_width = grid_width
         self.grid_height = grid_height
@@ -95,7 +95,9 @@ class Four_Rooms_Environment(gym.Env):
 
         if self.user_at_goal_location():
             self.reward = self.reward_for_achieving_goal
-            self.done = True
+            # self.done = True
+            # modify for pure exploration
+            self.done = False
         else:
             self.reward = self.step_reward_for_not_achieving_goal
             if self.step_count >= self.max_episode_steps:
