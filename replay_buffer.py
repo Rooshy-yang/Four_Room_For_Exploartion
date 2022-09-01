@@ -47,5 +47,5 @@ class ReplayBuffer:
 
     def save(self):
         data = (self.obs_buf,self.obs2_buf,self.act_buf,self.skill_buf,self.skill2_buf,self.rew_buf,self.done_buf)
-        for i in data:
-            np.save(i)
+        for i,value in enumerate(data):
+            np.save(str(i),value)

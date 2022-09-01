@@ -49,8 +49,8 @@ class Workspace:
                 self.agent.update(buffer, global_step)
 
             global_step += 1
-        np.save(self.agent.Q_table)
-        np.save(buffer)
+        np.save('Q_table', self.agent.Q_table)
+        buffer.save()
 
 
 @hydra.main(config_path='.', config_name='pretrain')
