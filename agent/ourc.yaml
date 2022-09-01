@@ -18,7 +18,7 @@ stddev_schedule: 0.2
 stddev_clip: 0.3
 update_skill_every_step: 50
 nstep: 3
-batch_size: 64
+batch_size: 32
 init_critic: true
 update_encoder: ${update_encoder}
 

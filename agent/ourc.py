@@ -113,11 +113,10 @@ class OURCAgent(Sarsa):
     def update_contrastive(self, taus, skills):
         metrics = dict()
         features = self.discriminator(taus)
-        logits, labels = self.compute_info_nce_loss(features, skills)
-        loss = self.discriminator_criterion(logits, labels)
+        loss = self.compute_info_nce_loss(features, skills)
+        loss = torch.mean(loss)
 
         self.dis_opt.zero_grad()
-
         loss.backward()
         self.dis_opt.step()
 
@@ -133,14 +132,12 @@ class OURCAgent(Sarsa):
             1 / self.skill_dim)
         gb_reward = gb_reward.reshape(-1, 1)
 
-        # # compute contrastive reward
-        # features = self.discriminator(tau_batch)
-        # logits, labels = self.compute_info_nce_loss(features, skills)
-        #
-        # contrastive_reward = torch.softmax(logits, dim=1)[:, 0].view(tau_batch.shape[0], -1)
-        #
-        # intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
-        intri_reward = gb_reward
+        # compute contrastive reward
+        features = self.discriminator(tau_batch)
+
+        # maximize softmax item
+        contrastive_reward = torch.exp(-self.compute_info_nce_loss(features, skills))
+        intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
         return intri_reward
 
     def compute_info_nce_loss(self, features, skills):
@@ -148,7 +145,7 @@ class OURCAgent(Sarsa):
         size = features.shape[0] // self.skill_dim
 
         labels = torch.argmax(skills, dim=1)
-        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
+        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).long()
         labels = labels.to(self.device)
 
         features = F.normalize(features, dim=1)
@@ -159,18 +156,19 @@ class OURCAgent(Sarsa):
         mask = torch.eye(labels.shape[0], dtype=torch.bool).to(self.device)
         labels = labels[~mask].view(labels.shape[0], -1)
         similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1)
+        similarity_matrix = torch.exp(similarity_matrix / self.temperature)
 
+        # don't limit update for all negative
+        pick_one_postive_sample_idx = torch.argmax(labels, dim=-1, keepdim=True)
+        pick_one_postive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_postive_sample_idx, 1)
+        neg = (~labels.bool()).long()
         # select one and combine multiple positives
-        positives = similarity_matrix[labels.bool()].view(labels.shape[0], -1)[:, 0].view(labels.shape[0], -1)
+        positives = torch.sum(similarity_matrix * pick_one_postive_sample_idx, dim=-1, keepdim=True)
+        negatives = torch.sum(similarity_matrix * neg, dim=-1, keepdim=True)
 
-        negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
+        loss = -torch.log(positives / negatives)
 
-        # set positives on column 0
-        logits = torch.cat([positives, negatives], dim=1)
-        labels = torch.zeros(logits.shape[0], dtype=torch.long).to(self.device)
-
-        logits = logits / self.temperature
-        return logits, labels
+        return loss
 
     def compute_gb_loss(self, taus, skill):
         """
@@ -197,7 +195,7 @@ class OURCAgent(Sarsa):
 
         batch = buffer.sample_batch(32)
         obs, next_obs, action, rew, done, skill, next_skill = batch.values()
-        # metrics.update(self.update_contrastive(next_obs, skill))
+        metrics.update(self.update_contrastive(next_obs, skill))
 
         # update q(z | tau)
         # bucket count for less time spending
