@@ -159,11 +159,11 @@ class OURCAgent(Sarsa):
         similarity_matrix = torch.exp(similarity_matrix / self.temperature)
 
         # don't limit update for all negative
-        pick_one_postive_sample_idx = torch.argmax(labels, dim=-1, keepdim=True)
-        pick_one_postive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_postive_sample_idx, 1)
+        pick_one_positive_sample_idx = torch.argmax(labels, dim=-1, keepdim=True)
+        pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
         neg = (~labels.bool()).long()
         # select one and combine multiple positives
-        positives = torch.sum(similarity_matrix * pick_one_postive_sample_idx, dim=-1, keepdim=True)
+        positives = torch.sum(similarity_matrix * pick_one_positive_sample_idx, dim=-1, keepdim=True)
         negatives = torch.sum(similarity_matrix * neg, dim=-1, keepdim=True)
 
         loss = -torch.log(positives / negatives)
