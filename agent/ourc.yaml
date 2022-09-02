@@ -13,7 +13,7 @@ use_tb: ${use_tb}
 use_wandb: ${use_wandb}
 num_expl_steps: ??? # to be specified later
 hidden_dim: 32
-#feature_dim: 50
+feature_dim: 50
 stddev_schedule: 0.2
 stddev_clip: 0.3
 update_skill_every_step: 50
@@ -27,7 +27,6 @@ contrastive_update_rate: 3
 temperature: 0.07
 contrastive_scale: 1.0
 
-obs_dim: 1
 skill_dim: 16
 ncol: 13
 nrow: 13

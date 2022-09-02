@@ -50,8 +50,8 @@ class Sarsa:
                  use_tb,
                  use_wandb,
                  ncol, nrow, epsilon, alpha, gamma, n_action=4,meta_dim=0, **kwargs):
-        self.skill_dim = kwargs['skill_dim']
-        self.Q_table = np.zeros([nrow * ncol, self.skill_dim, n_action])  # 初始化Q(s,z,a)表格
+        skill_dim = 16
+        self.Q_table = np.zeros([nrow * ncol, skill_dim, n_action])  # 初始化Q(s,z,a)表格
         self.n_action = n_action  # 动作个数
         self.alpha = alpha  # 学习率
         self.gamma = gamma  # 折扣因子

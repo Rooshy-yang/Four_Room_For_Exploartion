@@ -1,6 +1,6 @@
 import math
 from collections import OrderedDict
-from datetime import time
+import time
 
 import hydra
 import numpy as np
@@ -118,7 +118,7 @@ class DIAYNAgent(Sarsa):
 
         if step % self.update_every_steps != 0:
             return metrics
-        start = time()
+        start = time.time()
         batch = batch.sample_batch(1024)
         obs, next_obs, action, extr_reward, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
 
@@ -156,7 +156,7 @@ class DIAYNAgent(Sarsa):
         td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
                    self.Q_table[obs, skill, action]
         self.Q_table[obs, skill, action] += self.alpha * td_error
-        end = time()
+        end = time.time()
         if step % 10000 == 0:
-            print("on step : ",step, metrics, "update_time:", end-start)
+            print("on step : ", step, metrics, "update_time:", end-start)
         return metrics

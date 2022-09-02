@@ -49,9 +49,10 @@ class Discriminator(nn.Module):
 
 class OURCAgent(Sarsa):
     def __init__(self, contrastive_scale,
-                 update_encoder, contrastive_update_rate, temperature, update_skill_every_step,
+                 update_encoder, contrastive_update_rate,skill_dim, temperature, update_skill_every_step,
                  **kwargs):
         super().__init__(**kwargs)
+        self.skill_dim = skill_dim
         self.contrastive_scale = contrastive_scale
         self.update_encoder = update_encoder
         self.batch_size = kwargs['batch_size']
