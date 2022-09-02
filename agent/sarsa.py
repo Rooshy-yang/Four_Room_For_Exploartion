@@ -14,7 +14,7 @@ class Sarsa:
 
     def act(self, state, skill):  # 选取下一步的操作,具体实现为epsilon-贪婪
         if torch.is_tensor(skill):
-            skill_num = torch.argmax(skill, dim=1).numpy()
+            skill_num = torch.argmax(skill, dim=1).cpu().numpy()
         else:
             skill_num = np.argmax(skill)
         if np.random.random() < self.epsilon:

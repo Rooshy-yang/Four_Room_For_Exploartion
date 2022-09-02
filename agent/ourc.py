@@ -197,13 +197,12 @@ class OURCAgent(Sarsa):
         metrics.update(self.update_contrastive(next_obs, skill))
         for i in range(self.contrastive_update_rate - 1):
             batch = buffer.sample_batch(1024)
-            obs, next_obs, action, rew, done, skill, next_skill = batch.values()
             obs, next_obs, action, rew, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
             metrics.update(self.update_contrastive(next_obs, skill))
 
         # update q(z | tau)
         # bucket count for less time spending
-        metrics.update(self.update_gb(skill, next_obs, step))
+        # metrics.update(self.update_gb(skill, next_obs, step))
 
         # compute intrinsic reward
         with torch.no_grad():
@@ -213,12 +212,12 @@ class OURCAgent(Sarsa):
             obs = obs.detach()
             next_obs = next_obs.detach()
 
-        action = action.numpy().astype('int').flatten()
-        obs = obs.numpy().astype('int').flatten()
-        next_obs = next_obs.numpy().astype('int').flatten()
+        action = action.cpu().numpy().astype('int').flatten()
+        obs = obs.cpu().numpy().astype('int').flatten()
+        next_obs = next_obs.cpu().numpy().astype('int').flatten()
         next_action = self.act(next_obs, skill).flatten()
-        skill = torch.argmax(skill, dim=1).numpy()
-        intr_reward = intr_reward.numpy().flatten()
+        skill = torch.argmax(skill, dim=1).cpu().numpy()
+        intr_reward = intr_reward.cpu().numpy().flatten()
         td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
                    self.Q_table[obs, skill, action]
         self.Q_table[obs, skill, action] += self.alpha * td_error

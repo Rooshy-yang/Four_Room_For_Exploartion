@@ -43,7 +43,7 @@ class ReplayBuffer:
                      done=self.done_buf[idxs],
                      skill=self.skill_buf[idxs],
                      nextskill=self.skill2_buf[idxs])
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in batch.items()}
+        return batch
 
     def save(self):
         data = (self.obs_buf,self.obs2_buf,self.act_buf,self.skill_buf,self.skill2_buf,self.rew_buf,self.done_buf)
