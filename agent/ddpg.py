@@ -214,11 +214,11 @@ class DDPGAgent:
         return meta
 
     def act(self, obs, meta, step, eval_mode):
-        obs = torch.as_tensor(obs, device=self.device).unsqueeze(0)
+        obs = torch.as_tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
         h = self.encoder(obs)
         inputs = [h]
         for value in meta.values():
-            value = torch.as_tensor(value, device=self.device).unsqueeze(0)
+            value = torch.as_tensor(value, dtype=torch.float32, device=self.device).unsqueeze(0)
             inputs.append(value)
         inpt = torch.cat(inputs, dim=-1)
         #assert obs.shape[-1] == self.obs_shape[-1]

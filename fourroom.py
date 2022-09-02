@@ -50,8 +50,8 @@ class FourRoom(gym.Env):
         self.area = None
 
         #
-        self.original_target= np.array([SN / 2, SN / 2])
-        self.original_state = np.array([-SN / 2, -SN / 2])
+        self.original_target = np.array([SN / 2, SN / 2], dtype=np.float)
+        self.original_state = np.array([-SN / 2, -SN / 2], dtype=np.float)
         self.re_target()
 
     def re_target(self):

@@ -35,9 +35,10 @@ class Workspace:
         # only position
         obs = self.env.reset()[0]
         meta = self.agent.init_meta()
-        state_buffer = np.zeros(self.cfg.num_train_frames)
+        state_buffer = np.zeros([self.cfg.num_train_frames, self.env.observation_space.shape[0]])
         while global_step < self.cfg.num_train_frames:
-            action = self.agent.act(obs, meta['skill'])
+            with torch.no_grad():
+                action = self.agent.act(obs, meta, global_step, False)
             state_buffer[global_step] = obs
             next_obs, reward, done, _ = self.env.step(action)
             next_obs = next_obs[0]
