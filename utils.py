@@ -126,7 +126,7 @@ class Timer:
 
 
 class TruncatedNormal(pyd.Normal):
-    def __init__(self, loc, scale, low=-1.0, high=1.0, eps=1e-6):
+    def __init__(self, loc, scale, low=-2.0, high=2.0, eps=1e-6):
         super().__init__(loc, scale, validate_args=False)
         self.low = low
         self.high = high
