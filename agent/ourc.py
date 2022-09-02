@@ -193,7 +193,7 @@ class OURCAgent(Sarsa):
             return metrics
 
         batch = buffer.sample_batch(1024)
-        obs, next_obs, action, rew, done, skill, next_skill = batch.values()
+        obs, next_obs, action, rew, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
         metrics.update(self.update_contrastive(next_obs, skill))
         for i in range(self.contrastive_update_rate - 1):
             batch = buffer.sample_batch(1024)
