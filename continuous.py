@@ -51,6 +51,8 @@ class Workspace:
                 obs = self.env.reset()
             else:
                 obs = next_obs
+            if global_step % 50000 == 0:
+                print("step ", global_step, next_obs, reward, action, done)
             # if global_step > self.cfg.num_seed_frames:
             #     self.agent.update(buffer, global_step)
 
