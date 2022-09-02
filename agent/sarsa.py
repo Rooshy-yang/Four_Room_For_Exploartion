@@ -94,6 +94,9 @@ class Sarsa:
         obs = self.aug(obs)
         return self.encoder(obs)
 
+    def train(self):
+        ...
+
     def act(self, state, skill):  # 选取下一步的操作,具体实现为epsilon-贪婪
         if torch.is_tensor(skill):
             skill_num = torch.argmax(skill, dim=1).cpu().numpy()
