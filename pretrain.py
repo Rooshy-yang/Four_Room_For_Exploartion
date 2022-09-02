@@ -45,12 +45,12 @@ class Workspace:
                 obs = env.reset()
             else:
                 obs = next_obs
-            # if global_step > self.cfg.num_seed_frames:
-                # self.agent.update(buffer, global_step)
+            if global_step > self.cfg.num_seed_frames:
+                self.agent.update(buffer, global_step)
 
             global_step += 1
         end = time.time()
-        print(end - start)
+        print("time :",end - start)
         torch.save(self.agent, 'ourc.pkl')
         np.save('Q_table', self.agent.Q_table)
         buffer.save()
