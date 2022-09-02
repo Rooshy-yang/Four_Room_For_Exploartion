@@ -33,7 +33,7 @@ class Workspace:
         buffer = ReplayBuffer(obs_dim=self.env.observation_space.shape[0], act_dim=self.env.action_space.shape[0],
                               skill_dim=16, size=10000)
         # only position
-        obs = self.env.reset()[0]
+        obs = self.env.reset()
         meta = self.agent.init_meta()
         state_buffer = np.zeros([self.cfg.num_train_frames, self.env.observation_space.shape[0]])
         while global_step < self.cfg.num_train_frames:
@@ -41,13 +41,14 @@ class Workspace:
                 action = self.agent.act(obs, meta, global_step, False)
             state_buffer[global_step] = obs
             next_obs, reward, done, _ = self.env.step(action)
-            next_obs = next_obs[0]
+            next_obs = next_obs
             # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
-            buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
+            # buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
+            buffer.store(obs, action, reward, next_obs, done,)
             meta = next_meta
             if done:
-                obs = self.env.reset()[0]
+                obs = self.env.reset()
             else:
                 obs = next_obs
             # if global_step > self.cfg.num_seed_frames:
@@ -55,7 +56,7 @@ class Workspace:
 
             global_step += 1
         end = time.time()
-        print("time :",end - start)
+        print("time :", end - start)
         torch.save(self.agent, 'ourc.pkl')
         np.save('Q_table', self.agent.Q_table)
         np.save('state',state_buffer)

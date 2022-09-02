@@ -83,7 +83,8 @@ class FourRoom(gym.Env):
             if distance > RA and self.area != self.target_area:
                 break
 
-        return self.state, self.target
+        # return self.state, self.target
+        return self.state
 
     def step(self, action):
         """Step the environment"""
