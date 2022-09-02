@@ -198,9 +198,9 @@ class ONLYCAgent(Sarsa):
             intr_reward = self.compute_intr_reward(skill, next_obs, metrics)
 
         end = time.time()
+        metrics["reward"] = intr_reward.mean().item()
         if step % 10000 == 0:
             print("on step : ", step, metrics, "update_time:", end - start)
-        metrics["reward"] = intr_reward.mean().item()
 
         if not self.update_encoder:
             obs = obs.detach()
