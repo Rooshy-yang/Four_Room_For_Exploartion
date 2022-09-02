@@ -48,19 +48,18 @@ class Discriminator(nn.Module):
 
 
 class OURCAgent(Sarsa):
-    def __init__(self, update_skill_every_step, contrastive_scale,
-                 update_encoder, contrastive_update_rate, temperature, update_every_steps, **kwargs):
+    def __init__(self, contrastive_scale,
+                 update_encoder, contrastive_update_rate, temperature, update_skill_every_step,
+                 **kwargs):
         super().__init__(**kwargs)
-        self.lr = kwargs['lr']
-        self.update_skill_every_step = update_skill_every_step
         self.contrastive_scale = contrastive_scale
         self.update_encoder = update_encoder
         self.batch_size = kwargs['batch_size']
         self.contrastive_update_rate = contrastive_update_rate
         self.temperature = temperature
         self.device = kwargs['device']
+        self.update_skill_every_step = update_skill_every_step
         self.tau_len = update_skill_every_step
-        self.update_every_steps = update_every_steps
         self.obs_dim = kwargs['obs_dim']
         # increase obs shape to include skill dim
         kwargs["meta_dim"] = self.skill_dim

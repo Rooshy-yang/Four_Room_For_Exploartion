@@ -1,5 +1,6 @@
 import math
 from collections import OrderedDict
+from datetime import time
 
 import hydra
 import numpy as np
@@ -9,6 +10,7 @@ import torch.nn.functional as F
 
 import utils
 from agent.ddpg import DDPGAgent
+from agent.sarsa import Sarsa
 
 
 class DIAYN(nn.Module):
@@ -27,7 +29,7 @@ class DIAYN(nn.Module):
         return skill_pred
 
 
-class DIAYNAgent(DDPGAgent):
+class DIAYNAgent(Sarsa):
     def __init__(self, update_skill_every_step, skill_dim, diayn_scale,
                  update_encoder, **kwargs):
         self.skill_dim = skill_dim
@@ -116,11 +118,9 @@ class DIAYNAgent(DDPGAgent):
 
         if step % self.update_every_steps != 0:
             return metrics
-
+        start = time()
         batch = batch.sample_batch(1024)
-
-        obs, action, extr_reward, discount, next_obs, skill = utils.to_torch(
-            batch, self.device)
+        obs, next_obs, action, extr_reward, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
 
         # augment and encode
         obs = self.aug_and_encode(obs)
@@ -147,19 +147,16 @@ class DIAYNAgent(DDPGAgent):
             next_obs = next_obs.detach()
 
         # extend observations with skill
-        obs = torch.cat([obs, skill], dim=1)
-        next_obs = torch.cat([next_obs, skill], dim=1)
-
-        # update critic
-        metrics.update(
-            self.update_critic(obs.detach(), action, reward, discount,
-                               next_obs.detach(), step))
-
-        # update actor
-        metrics.update(self.update_actor(obs.detach(), step))
-
-        # update critic target
-        utils.soft_update_params(self.critic, self.critic_target,
-                                 self.critic_target_tau)
-
+        action = action.cpu().numpy().astype('int').flatten()
+        obs = obs.cpu().numpy().astype('int').flatten()
+        next_obs = next_obs.cpu().numpy().astype('int').flatten()
+        next_action = self.act(next_obs, skill).flatten()
+        skill = torch.argmax(skill, dim=1).cpu().numpy()
+        intr_reward = intr_reward.cpu().numpy().flatten()
+        td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
+                   self.Q_table[obs, skill, action]
+        self.Q_table[obs, skill, action] += self.alpha * td_error
+        end = time()
+        if step % 10000 == 0:
+            print("on step : ",step, metrics, "update_time:", end-start)
         return metrics
