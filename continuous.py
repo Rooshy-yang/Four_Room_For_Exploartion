@@ -1,9 +1,8 @@
 import time
 
+import gym
 import numpy as np
-
 from fourroom import FourRoom
-
 from replay_buffer import ReplayBuffer
 import hydra
 import torch
@@ -23,8 +22,8 @@ class Workspace:
         self.env = FourRoom()
 
         self.agent = make_agent(cfg.obs_type,
-                                self.env.observation_space.shape[0],
-                                self.env.action_space.shape[0],
+                                self.env.observation_space,
+                                self.env.action_space,
                                 cfg.num_seed_frames // cfg.action_repeat,
                                 cfg.agent)
 
@@ -61,9 +60,9 @@ class Workspace:
         np.save('state',state_buffer)
 
 
-@hydra.main(config_path='.', config_name='pretrain')
+@hydra.main(config_path='.', config_name='continuous')
 def main(cfg):
-    from pretrain import Workspace as W
+    from continuous import Workspace as W
     workspace = W(cfg)
     workspace.train()
 

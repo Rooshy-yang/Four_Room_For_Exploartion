@@ -7,7 +7,6 @@ from gym import spaces
 from gym.envs.registration import register
 
 """
-continuous four_rooms env 
 action space [-2,2]^2
 observation space 10*10:
 """
@@ -45,7 +44,6 @@ class FourRoom(gym.Env):
         # Re target
         self.target = None
         self.target_area = None
-        self.re_target()
 
         # current state
         self.state = None
@@ -54,6 +52,7 @@ class FourRoom(gym.Env):
         #
         self.original_target= np.array([SN / 2, SN / 2])
         self.original_state = np.array([-SN / 2, -SN / 2])
+        self.re_target()
 
     def re_target(self):
         """Reset the target"""
@@ -219,7 +218,7 @@ class FourRoom(gym.Env):
             return min(norm(self.state - DOORS[2]) + norm(self.target - DOORS[0]),
                        norm(self.state - DOORS[1]) + norm(self.target - DOORS[3])) + SDM
 
-#
+
 # register(
 #     id='Fourrooms-v1',
 #     entry_point='continus_four_room:FourRoom',
