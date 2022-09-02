@@ -111,13 +111,13 @@ class DIAYNAgent(DDPGAgent):
                                             pred_z.size())[0]
         return d_loss, df_accuracy
 
-    def update(self, replay_iter, step):
+    def update(self, batch, step):
         metrics = dict()
 
         if step % self.update_every_steps != 0:
             return metrics
 
-        batch = next(replay_iter)
+        batch = batch.sample_batch(1024)
 
         obs, action, extr_reward, discount, next_obs, skill = utils.to_torch(
             batch, self.device)
