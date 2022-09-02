@@ -1,4 +1,5 @@
 import math
+import time
 from collections import OrderedDict
 
 import numpy as np
@@ -188,7 +189,7 @@ class OURCAgent(Sarsa):
 
     def update(self, buffer, step):
         metrics = dict()
-
+        start = time.time()
         if step % self.update_every_steps != 0:
             return metrics
 
@@ -221,6 +222,7 @@ class OURCAgent(Sarsa):
         td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
                    self.Q_table[obs, skill, action]
         self.Q_table[obs, skill, action] += self.alpha * td_error
+        end = time.time()
         if step % 10000 == 0: 
-            print("on step : ",step, metrics)
+            print("on step : ",step, metrics, "update_time:", end-start)
         return metrics
