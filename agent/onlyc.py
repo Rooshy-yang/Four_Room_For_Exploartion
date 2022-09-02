@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import utils
 from agent.sarsa import Sarsa
 
+
 class GeneratorB(nn.Module):
     def __init__(self, tau_dim, skill_dim, hidden_dim):
         super().__init__()
@@ -47,9 +48,9 @@ class Discriminator(nn.Module):
         return features
 
 
-class OURCAgent(Sarsa):
+class ONLYCAgent(Sarsa):
     def __init__(self, contrastive_scale,
-                 update_encoder, contrastive_update_rate,skill_dim, temperature, update_skill_every_step,
+                 update_encoder, contrastive_update_rate, skill_dim, temperature, update_skill_every_step,
                  **kwargs):
         self.skill_dim = skill_dim
         kwargs["meta_dim"] = self.skill_dim
@@ -63,7 +64,8 @@ class OURCAgent(Sarsa):
         self.update_skill_every_step = update_skill_every_step
         self.tau_len = update_skill_every_step
 
-        # create ourc
+
+        # create ONLYC
         self.gb = GeneratorB(self.obs_dim - self.skill_dim, self.skill_dim,
                              kwargs['hidden_dim']).to(kwargs['device'])
 
@@ -122,20 +124,12 @@ class OURCAgent(Sarsa):
 
     def compute_intr_reward(self, skills, tau_batch, metrics):
 
-        # compute q(z | tau) reward
-        d_pred = self.gb(tau_batch)
-        d_pred_log_softmax = F.log_softmax(d_pred, dim=1)
-        _, pred_z = torch.max(d_pred_log_softmax, dim=1, keepdim=True)
-        gb_reward = d_pred_log_softmax[torch.arange(d_pred.shape[0]), torch.argmax(skills, dim=1)] - math.log(
-            1 / self.skill_dim)
-        gb_reward = gb_reward.reshape(-1, 1)
-
         # compute contrastive reward
         features = self.discriminator(tau_batch)
 
         # maximize softmax item
         contrastive_reward = torch.exp(-self.compute_info_nce_loss(features, skills))
-        intri_reward = gb_reward + contrastive_reward * self.contrastive_scale
+        intri_reward = contrastive_reward * self.contrastive_scale
         return intri_reward
 
     def compute_info_nce_loss(self, features, skills):
@@ -172,6 +166,7 @@ class OURCAgent(Sarsa):
         """
         DF Loss
         """
+
         d_pred = self.gb(taus)
         d_pred_log_softmax = F.log_softmax(d_pred, dim=1)
         _, pred_z = torch.max(d_pred_log_softmax, dim=1, keepdim=True)
@@ -198,14 +193,15 @@ class OURCAgent(Sarsa):
             obs, next_obs, action, rew, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
             metrics.update(self.update_contrastive(next_obs, skill))
 
-        # update q(z | tau)
-        # bucket count for less time spending
-        metrics.update(self.update_gb(skill, next_obs, step))
-
         # compute intrinsic reward
         with torch.no_grad():
             intr_reward = self.compute_intr_reward(skill, next_obs, metrics)
+
+        end = time.time()
+        if step % 10000 == 0:
+            print("on step : ", step, metrics, "update_time:", end - start)
         metrics["reward"] = intr_reward.mean().item()
+
         if not self.update_encoder:
             obs = obs.detach()
             next_obs = next_obs.detach()
@@ -219,7 +215,5 @@ class OURCAgent(Sarsa):
         td_error = intr_reward + self.gamma * self.Q_table[next_obs, skill, next_action] - \
                    self.Q_table[obs, skill, action]
         self.Q_table[obs, skill, action] += self.alpha * td_error
-        end = time.time()
-        if step % 10000 == 0: 
-            print("on step : ",step, metrics, "update_time:", end-start)
+
         return metrics
