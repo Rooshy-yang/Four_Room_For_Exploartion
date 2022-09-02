@@ -30,12 +30,14 @@ class Workspace:
     def train(self):
         start = time.time()
         global_step = 0
-        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=self.cfg.num_train_frames + 2)
+        buffer = ReplayBuffer(obs_dim=1, act_dim=1, skill_dim=16, size=10000)
         env = Four_Rooms_Environment()
         obs = env.reset()
         meta = self.agent.init_meta()
+        state_buffer = np.zeros(self.cfg.num_train_frames)
         while global_step < self.cfg.num_train_frames:
             action = self.agent.act(obs, meta['skill'])
+            state_buffer[global_step] = obs
             next_obs, reward, done, _ = env.step(action)
             # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
@@ -53,7 +55,7 @@ class Workspace:
         print("time :",end - start)
         torch.save(self.agent, 'ourc.pkl')
         np.save('Q_table', self.agent.Q_table)
-        buffer.save()
+        np.save('state',state_buffer)
 
 
 @hydra.main(config_path='.', config_name='pretrain')
