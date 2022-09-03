@@ -23,14 +23,17 @@ class ReplayBuffer:
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 
-    def store(self, obs, act, rew, next_obs, done, skill=None, next_skill=None):
+    def store(self, obs, act, rew, next_obs, done, meta=None, next_meta=None):
         self.obs_buf[self.ptr] = obs
         self.obs2_buf[self.ptr] = next_obs
         self.act_buf[self.ptr] = act
         self.rew_buf[self.ptr] = rew
         self.done_buf[self.ptr] = done
-        self.skill_buf[self.ptr] = skill
-        self.skill2_buf[self.ptr] = next_skill
+        if meta != None and next_meta != None :
+            skill =  meta['skill']
+            next_skill = next_meta['skill']
+            self.skill_buf[self.ptr] = skill
+            self.skill2_buf[self.ptr] = next_skill
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 

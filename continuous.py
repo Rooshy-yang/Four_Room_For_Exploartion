@@ -47,19 +47,17 @@ class Workspace:
             # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
             # buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
-            buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
+            buffer.store(obs, action, reward, next_obs, done, meta, next_meta)
             meta = next_meta
             if done:
                 obs = self.env.reset()
             else:
                 obs = next_obs
-            if obs.any() == None or next_obs.any() == None or action.any() == None or reward == None :
-                a = 1
-                b = 3
-            if global_step > self.cfg .num_seed_frames:
+
+            if global_step > self.cfg.num_seed_frames:
                 metric = self.agent.update(buffer, global_step)
-            if global_step % 1000 == 0:
-                print(time.time() - start,"step ", global_step, next_obs, reward, action, done, metric)
+            if global_step % 10000 == 0:
+                print(time.time() - start, "step ", global_step, next_obs, reward, action, done, metric)
                 start = time.time()
 
             global_step += 1
@@ -67,7 +65,7 @@ class Workspace:
         print("time :", end - start)
         torch.save(self.agent, 'ourc.pkl')
         # np.save('Q_table', self.agent.Q_table)
-        np.save('state',state_buffer)
+        np.save('state', state_buffer)
 
 
 @hydra.main(config_path='.', config_name='continuous')
