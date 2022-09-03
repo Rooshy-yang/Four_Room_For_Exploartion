@@ -221,7 +221,7 @@ class DDPGAgent:
             value = torch.as_tensor(value, dtype=torch.float32, device=self.device).unsqueeze(0)
             inputs.append(value)
         inpt = torch.cat(inputs, dim=-1)
-        #assert obs.shape[-1] == self.obs_shape[-1]
+        # assert obs.shape[-1] == self.obs_shape[-1]
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(inpt, stddev)
         if eval_mode:
@@ -292,14 +292,14 @@ class DDPGAgent:
 
     def update(self, replay_iter, step):
         metrics = dict()
-        #import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
         if step % self.update_every_steps != 0:
             return metrics
 
-        batch = next(replay_iter)
-        obs, action, reward, discount, next_obs = utils.to_torch(
-            batch, self.device)
+        batch = replay_iter.sample_batch(1024)
+        obs, next_obs, action, reward, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
+        discount = torch.full([1024, 1], 0.977, device=self.device)
 
         # augment and encode
         obs = self.aug_and_encode(obs)
