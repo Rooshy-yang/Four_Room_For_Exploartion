@@ -28,6 +28,7 @@ class Workspace:
                                 cfg.agent)
 
     def train(self):
+        metric = dict()
         start = time.time()
         global_step = 0
         buffer = ReplayBuffer(obs_dim=self.env.observation_space.shape[0], act_dim=self.env.action_space.shape[0],
@@ -36,31 +37,36 @@ class Workspace:
         obs = self.env.reset()
         meta = self.agent.init_meta()
         state_buffer = np.zeros([self.cfg.num_train_frames, self.env.observation_space.shape[0]])
+        start = time.time()
         while global_step < self.cfg.num_train_frames:
             with torch.no_grad():
-                action = self.agent.act(obs, meta, global_step, False)
+                action = 2 * self.agent.act(obs, meta, global_step, False)
             state_buffer[global_step] = obs
             next_obs, reward, done, _ = self.env.step(action)
             next_obs = next_obs
             # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
             # buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
-            buffer.store(obs, action, reward, next_obs, done,)
+            buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
             meta = next_meta
             if done:
                 obs = self.env.reset()
             else:
                 obs = next_obs
-            if global_step % 50000 == 0:
-                print("step ", global_step, next_obs, reward, action, done)
-            # if global_step > self.cfg.num_seed_frames:
-            #     self.agent.update(buffer, global_step)
+            if obs.any() == None or next_obs.any() == None or action.any() == None or reward == None :
+                a = 1
+                b = 3
+            if global_step > self.cfg .num_seed_frames:
+                metric = self.agent.update(buffer, global_step)
+            if global_step % 1000 == 0:
+                print(time.time() - start,"step ", global_step, next_obs, reward, action, done, metric)
+                start = time.time()
 
             global_step += 1
         end = time.time()
         print("time :", end - start)
         torch.save(self.agent, 'ourc.pkl')
-        np.save('Q_table', self.agent.Q_table)
+        # np.save('Q_table', self.agent.Q_table)
         np.save('state',state_buffer)
 
 
