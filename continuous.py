@@ -29,7 +29,7 @@ class Workspace:
 
     def train(self):
         metric = dict()
-        start = time.time()
+
         global_step = 0
         buffer = ReplayBuffer(obs_dim=self.env.observation_space.shape[0], act_dim=self.env.action_space.shape[0],
                               skill_dim=16, size=10000)
@@ -43,10 +43,8 @@ class Workspace:
                 action = 2 * self.agent.act(obs, meta, global_step, False)
             state_buffer[global_step] = obs
             next_obs, reward, done, _ = self.env.step(action)
-            next_obs = next_obs
             # print(obs, action, np.argmax(meta['skill']), next_obs, done, global_step)
             next_meta = self.agent.update_meta(meta, global_step, obs)
-            # buffer.store(obs, action, reward, next_obs, done, meta['skill'], next_meta['skill'])
             buffer.store(obs, action, reward, next_obs, done, meta, next_meta)
             meta = next_meta
             if done:

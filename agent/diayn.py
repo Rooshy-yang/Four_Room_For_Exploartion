@@ -53,7 +53,6 @@ class DIAYNAgent(DDPGAgent):
 
         self.diayn.train()
 
-
     def init_meta(self):
         skill = np.zeros(self.skill_dim, dtype=np.float32)
         skill[np.random.choice(self.skill_dim)] = 1.0
@@ -110,18 +109,18 @@ class DIAYNAgent(DDPGAgent):
                      pred_z.reshape(1,
                                     list(
                                         pred_z.size())[0])[0])).float() / list(
-                                            pred_z.size())[0]
+            pred_z.size())[0]
         return d_loss, df_accuracy
 
-    def update(self, batch, step):
+    def update(self, buffer, step):
         metrics = dict()
 
         if step % self.update_every_steps != 0:
             return metrics
 
-        batch = batch.sample_batch(1024)
+        batch = buffer.sample_batch(1024)
         obs, next_obs, action, extr_reward, done, skill, next_skill = utils.to_torch(batch.values(), self.device)
-        discount = torch.full([1024,1],0.977,device=self.device)
+        discount = torch.full([1024, 1], 0.977, device=self.device)
         # augment and encode
         obs = self.aug_and_encode(obs)
         next_obs = self.aug_and_encode(next_obs)
