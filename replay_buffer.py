@@ -29,11 +29,11 @@ class ReplayBuffer:
         self.act_buf[self.ptr] = act
         self.rew_buf[self.ptr] = rew
         self.done_buf[self.ptr] = done
-        if meta != None and next_meta != None :
-            skill =  meta['skill']
-            next_skill = next_meta['skill']
-            self.skill_buf[self.ptr] = skill
-            self.skill2_buf[self.ptr] = next_skill
+        if meta is not None and next_meta is not None:
+            for value in meta.values():
+                self.skill_buf[self.ptr] = value
+            for value in next_meta.values():
+                self.skill2_buf[self.ptr] = value
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
@@ -49,6 +49,6 @@ class ReplayBuffer:
         return batch
 
     def save(self):
-        data = (self.obs_buf,self.obs2_buf,self.act_buf,self.skill_buf,self.skill2_buf,self.rew_buf,self.done_buf)
-        for i,value in enumerate(data):
-            np.save(str(i),value)
+        data = (self.obs_buf, self.obs2_buf, self.act_buf, self.skill_buf, self.skill2_buf, self.rew_buf, self.done_buf)
+        for i, value in enumerate(data):
+            np.save(str(i), value)
